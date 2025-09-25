@@ -31,5 +31,238 @@ weather_df |>
   geom_point()
 ```
 
+here we save in our env as object
+```{r}
+ggp_weather_scatterplot =   
+  weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point()
+```
+
+Check that some rows are missing
+
+```{r}
+weather_df |> 
+  filter(is.na(tmax))
+```
+
+
+## Fancier scatterplots
+
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name))+ #Adding color to the points
+                                                 # aes is for mapping
+  geom_point(alpha = 0.3) +                      # alpha changes the opacity
+  geom_smooth(se = F)                            # adds smooth line, se = F gets rid of CI
+```
+
+
+Where you define aes matters
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax))+ 
+        # aes is for mapping
+  geom_point(aes(color = name, size = prcp), alpha = 0.3, ) +  
+        # alpha changes the opacity, only one color for line, changing size of point using size = prcp
+  geom_smooth(se = F) 
+```
+
+
+Use faceting
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax))+ 
+  geom_point(aes(color = name), alpha = 0.3, size = 0.8 ) +  
+  geom_smooth(se = F) +
+  facet_grid(. ~ name) 
+      #facet shows the different subgroups on different plots
+
+
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax))+ 
+  geom_point(aes(color = name), alpha = 0.3, size = 0.8 ) +  
+  geom_smooth(se = F) +
+  facet_grid(name ~ .) 
+      #facet shows the different subgroups on different plots. row ~ column
+```
+
+
+More interesting scatterplot
+
+```{r}
+
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name, shape = name))+ 
+  geom_point(aes(size = prcp), alpha = 0.3, ) +  
+  geom_smooth(se = F) +
+  facet_grid(. ~ name)
+
+```
+
+
+
+Learning assessment
+```{r}
+weather_df |> 
+  filter(name == "CentralPark_NY") |> 
+  mutate(
+    tmax_f = (tmax * 9/5) + 32,
+    tmin_f = (tmin * 9/5) + 32
+    ) |> 
+  ggplot(aes(x = tmin_f, y = tmax_f)) +
+    geom_point() +
+    geom_smooth(se = F, method = "lm")
+      # method = lm means to added linear regression line
+```
+
+
+Small changes
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name, shape = name))+ 
+  # geom_point(alpha = 0.3) + 
+      #can get rid of the points and just have lines
+  geom_smooth(se = F)
+
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name, shape = name))+
+   geom_smooth(se = F)+
+   geom_point(alpha = 0.3)
+ 
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_hex()
+    # hexogons represent how many points are in a specific area
+
+weather_df |> 
+  ggplot(aes(x=tmin, y = tmax)) +
+  geom_point(aes(color = "purple"))
+
+```
+
+## UNivariate plots
+
+```{r}
+
+weather_df |> 
+  ggplot(aes(x = tmin)) +
+  geom_histogram(color = "white",  fill = "red")
+```
+
+
+```{r}
+
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram()
+
+```
+
+how to fix the overlapping graphs?
+```{r}
+
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram() +
+  facet_grid(name ~ .)
+
+
+```
+
+maybe density plot
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_density(alpha = 0.2)
+```
+
+
+box plot
+```{r}
+weather_df |> 
+  ggplot(aes(x = name, y = tmin)) +
+  geom_boxplot(aes(fill = name, color = name))
+```
+
+violin plot
+
+aes - mapp aesthetic - want something to vary by value in data
+
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_violin()
+```
+
+ridge plot
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = name)) +
+  geom_density_ridges()
+```
+
+## LA 2
+
+make different plots for precepitation variable
+
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = prcp, fill = name)) +
+  geom_density()
+
+
+weather_df |> 
+  ggplot(aes(x = prcp, fill = name)) +
+  geom_histogram() +
+  facet_grid(name ~ .)
+
+weather_df |> 
+  filter(prcp > 5, prcp <1000) |> 
+  ggplot(aes(x = prcp, fill = name)) +
+  geom_density(alpha = 0.2)
+
+
+```
+
+
+## Saving and embedding plot
+
+```{r}
+ggp_weather_violin = 
+  weather_df |> 
+ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_violin()
+
+ggsave("plots/violin_plot.pdf", ggp_weather_violin,
+       width = 8, height = 6)
+
+
+```
+
+
+embedding plots
+
+```{r, fig.width = 6, fig.height = 4}
+
+ggp_weather_violin
+
+```
+
+
+
+
+
+
+
+
+
 
 
