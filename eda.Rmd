@@ -118,3 +118,120 @@ weather_df |>
   # same as above
 ```
 
+
+```{r}
+weather_df |> 
+  group_by(month) |> 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = T),
+    median_tmin = median(tmin, na.rm = T),
+    sd_prcp = sd(prcp, na.rm = T)
+  )
+
+    # but these avgs are across all the different locations which isn't very helpful
+```
+
+
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = T),
+    median_tmin = median(tmin, na.rm = T),
+    sd_prcp = sd(prcp, na.rm = T)
+  )
+```
+
+This is still a dataframe
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = T)
+  ) |> 
+  ggplot(aes(x = month, y = mean_tmax, color = name)) +
+  geom_point()+
+  geom_line()
+```
+
+sometimes format results more nicely
+
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = T)
+  ) |>
+  pivot_wider(
+    names_from = name, 
+    values_from = mean_tmax
+  ) |> 
+  knitr::kable(digits = 2)
+    #knitr creates a nice looking table
+```
+
+## mutate with groups
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    mean_tmax = mean(tmax, na.rm = T),
+    center_tmax = tmax-mean_tmax
+  ) |> 
+  ggplot(aes(x = date, y = center_tmax, color = name)) +
+  geom_point()
+# for each weather station, what is avg, remove mean, then plot result
+# centering the values so the center is 0
+```
+
+look for cold daays
+
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  mutate(temp_rank = desc(min_rank(tmax))) |> 
+  filter(temp_rank < 2)
+
+    # showing the coldest day bc temp_rank <2
+```
+
+WHat about lags
+Does my current value depend on previous values
+did yesterdays stress level predict today's sleep quality?
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(lagged_tmax = lag(tmax))
+ # lag is the difference ebtween today and yesterdays day
+  #the group_by is added here bc...
+```
+
+use the variables you create
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax)
+  ) |> 
+  summaraize(
+    sd_tmax_change = sd(temp_change, na.rm = T),
+    tmax_change_max = max(temp_change, na.rm = T)
+  )
+
+# the biggest change 
+```
+
+which day did the max change happen
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax),
+    change_rank = min_rank(desc(temp_change))
+  ) |> 
+  filter(
+    change_rank < 2
+  )
+```
+
