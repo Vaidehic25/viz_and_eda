@@ -1,0 +1,233 @@
+---
+title: "viz_1"
+output: github_document
+date: "2025-09-25"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(patchwork)
+library(p8105.datasets)
+```
+
+Import the weather data
+
+```{r}
+data("weather_df")
+```
+
+Let's make out basic scatterplot
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax))+
+  geom_point(aes(color = name), alpha = 0.5) +
+  labs(
+    x = " Min daily temp",
+    y = " max daily temp",
+    title = "Temp scatterplot",
+    caption = "Data from NOAA",
+    color = "Location" # color for different location
+  )
+```
+
+
+## Scales
+
+scale for x and y axis
+
+```{r}
+ggplot_temperature =
+  weather_df |> 
+  # filter(tmax > 10, tmax <30) # another way to zoom in
+  ggplot(aes(x = tmin, y = tmax))+
+  geom_point(aes(color = name), alpha = 0.5) +
+  labs(
+    x = " Min daily temp",
+    y = " max daily temp",
+    title = "Temp scatterplot",
+    caption = "Data from NOAA",
+    color = "Location" # color for different location
+  ) +
+  scale_x_continuous(
+    breaks = c(-20, 0 , 25),
+    labels = c("-20C", "0", "25")
+    ) + #X is continuous so using this argument
+  scale_y_continuous(
+    trans = "sqrt",
+    limits = c(10,30) # zooming in to specific y axis scale
+  ) +
+ # scale_color_hue (h= c(100,300)) # changes color palette. but actually use viridis package
+  viridis::scale_color_viridis(
+    discrete = TRUE
+  ) 
+```
+
+## Themes
+
+change everything going on with the plot
+
+Making my base plot
+  # theme_bw, theme_minimal
+
+```{r}
+ggplot_temperature +
+  #theme_minimal() +
+  theme(legend.position = "bottom")
+  
+```
+
+
+```{r}
+ggsave("weather_scatterplot.png", ggplot_temperature) 
+```
+
+
+## Adding data in geoms
+
+```{r}
+central_park_df = 
+  weather_df |> 
+  filter(name == "CentralPark_NY")
+
+molokai_df = 
+  weather_df |> 
+  filter(name == "Molokai_HI")
+
+ggplot(data = molokai_df, aes(x=date, y=tmax, color = name)) +
+  geom_point() +
+  geom_line(data = central_park_df)  #this is helpful if you want to add in monthly avg, you would create a different df with the avg
+  
+```
+
+
+## `patchwork`
+
+make 3 plots and combine using patchwork
+
+first is scatterplot between t max and t min
+second is density plot of recip
+thrid shows seasonality and groupings of 
+
+```{r}
+ggp_tmax_tmin =
+  weather_df |> 
+  ggplot(aes(x=tmax, y = tmin, color = name))+
+  geom_point(alpha = 0.5)+
+  theme(legend.position = "none")
+
+ggp_prec_density = 
+  weather_df |>
+  filter(prcp > 0) |> 
+  ggplot(aes(x = prcp, fill = name)) +
+    geom_density(alpha = 0.5)+ 
+  theme(legend.position = "none")
+
+
+(ggp_tmax_tmin + ggp_prec_density)
+  
+```
+
+
+## Data manipulation
+
+temp violin plots
+
+```{r}
+weather_df |>
+  mutate(name = forcats::fct_relevel(name, c("Molokai_HI", "CentralPark_NY", "Waterhole_WA"))) |> # specifying the orde we wantt o see the categoreis in in graph
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+name in order of avg value for each of the groups
+
+```{r}
+weather_df |>
+  mutate(name = forcats::fct_reorder(name, tmax)) |> # this is helpful if you have a lot of categories an you want them in order by avg avlue 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+what about data tidiness
+
+does distribution of the depression index change over time . 
+
+telling ggplot to make viz where x = study visit, y = score. box plot. but our data aren't structured in a way to make this box plot
+
+
+```{r}
+pulse_df = 
+  haven::read_sas("data/public_pulse_data.sas7bdat") |> 
+  janitor::clean_names() |> 
+  pivot_longer(
+   bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score_",
+    values_to = "bdi") |>
+  mutate(visit = fct_inorder(visit)) #fct_inorder adds the variables in the way they show up. baseline show sup first so thats why it is first now
+```
+
+```{r}
+ggplot(pulse_df, aes(x = visit, y = bdi)) + 
+  geom_boxplot()
+```
+
+
+thinking thorught he pups figure
+
+x = dose bc we see con, low, mod
+y = days until outcome
+facet - the two rows are day of tx
+facet - the four columns of specific outcomes
+
+variables we need: pup, dose, tx, outcome, postnatal day
+
+make a plot for the FAS study
+
+```{r}
+pups_df = 
+  read_csv("data/FAS_pups.csv", na = c("NA", ".", ""), skip = 3) |> 
+janitor::clean_names() |> 
+  mutate(
+    sex = 
+      case_match(
+        sex, 
+        1 ~ "male", 
+        2 ~ "female"))
+
+
+litters_df = 
+  read_csv("./data/FAS_litters.csv", na = c("NA", ".", "")) |>
+  janitor::clean_names() |>
+  separate(group, into = c("dose", "tx_day"), sep = 3)
+
+# group has 2 pieces of info I need: dose and tx day
+```
+
+
+```{r}
+fas_data = left_join(pups_df, litters_df, by = "litter_number") 
+
+fas_data |> 
+  select(pd_ears:tx_day) |> 
+  pivot_longer(
+    pd_ears:pd_walk,
+    names_to = "outcome",
+    names_prefix = "pd_",
+    values_to = "pn_day"
+  ) |> 
+  mutate(outcome = fct_reorder(outcome, pn_day)) |> 
+  drop_na() |> 
+  ggplot(
+    aes(x = dose, y = pn_day) )+
+    geom_violin()+
+    facet_grid(tx_day~outcome)
+```
+
+
+
+
+

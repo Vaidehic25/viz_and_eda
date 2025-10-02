@@ -1,0 +1,120 @@
+---
+title: "eda"
+output: html_document
+date: "2025-10-02"
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(p8105.datasets)
+```
+
+
+```{r - default options}
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+
+Import the weather data
+
+```{r}
+data("weather_df")
+
+weather_df = 
+  weather_df |> 
+  mutate(month = floor_date(date, unit = "month"))
+      # floor_date rounds down to first of month
+      #lubridate has helpful date functions
+
+```
+
+
+make plots
+```{r}
+weather_df |> 
+  ggplot(aes(x=prcp))+
+  geom_histogram()
+
+  # see that right skewed
+```
+
+
+check on extreme values
+
+```{r}
+weather_df |> 
+  filter(prcp > 1000)
+```
+
+Look at data again
+
+```{r}
+weather_df |> 
+  filter(tmax >= 20, tmax <= 30) |> 
+  ggplot(aes(x=tmin, y = tmax, color = name, shape = name)) +
+  geom_point(alpha = 0.75)
+
+    # see that he washington data points are kind of all over
+```
+
+
+group_by
+
+```{r}
+weather_df |> 
+  group_by(name, month)
+    # can group by multiple variables
+    # group by doesnt cange anyothing or add any variables
+```
+
+group and count things
+
+```{r}
+weather_df |>
+  group_by(name) |>
+  summarize(n = n())
+
+    # can see how many obs we have for each group
+    # first we gorup by name, then we summarize the obs we have
+```
+
+```{r}
+weather_df |>
+  group_by(month) |>
+  summarize(n = n())
+
+    # seeing number of obs by month
+    # group by name and month shows us how many days in each month
+```
+
+```{r}
+weather_df |>
+  group_by(month) |>
+  summarize(n = n_distinct(date))
+
+  # shows number of distinct dates
+```
+
+you can count directly
+```{r}
+weather_df |> 
+  count(name)
+
+  # same as above
+```
+
